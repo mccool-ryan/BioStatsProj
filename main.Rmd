@@ -40,7 +40,12 @@ print(covfefe)
 ```
 
 ``` {r stateData2016}
-
+#calculate percentage for the state
+#Need to do something like this:
+results16 %>% 
+  filter(state_abbr=state) %>% 
+  column.sum(votes_dem)/column.sum(total_votes)
+  column.sum(votes_GOP)/column.sum(total_votes)
 ```
 
 ```{r mapping}
