@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages('maps')
 
 
-library(usmap)
+library(maps)
 library(ggplot2)
 library(tidyverse)
 
@@ -55,3 +55,12 @@ plot_usmap(data = statepop, values = "pop_2015", color = "red") +
     low = "white", high = "red", name = "Population (2015)", label = scales::comma
   ) + theme(legend.position = "right")
 ```
+
+```{r mapping}
+us_states <- map_data('state')
+
+us_states %>% 
+  ggplot(aes(x=long,y=lat,group=group)) +
+    geom_polygon(fill="white", color = "black")
+```
+
