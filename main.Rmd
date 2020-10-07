@@ -1,0 +1,52 @@
+---
+title: "Main"
+author: "McCool"
+date: "10/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+``` {r packages}
+#install packages and initiate
+#R collaboratory link: https://colab.research.google.com/notebook#create=true&language=r
+#install.packages('tidyverse')
+#install.packages('ggplot2')
+#install.packages('usmap')
+
+
+library(usmap)
+library(ggplot2)
+library(tidyverse)
+
+```
+
+``` {r scrapeData}
+#make 2020 poll data
+poll20 <- read_csv("https://projects.fivethirtyeight.com/polls-page/president_polls.csv")
+
+#make 2016 results by % of vote
+results16 <- read_csv("https://raw.githubusercontent.com/tonmcg/US_County_Level_Election_Results_08-16/master/2016_US_County_Level_Presidential_Results.csv")
+
+#subsets the data we really want, including county name
+sub16 <- results16 %>% filter(X1>27) %>% #Alaska county listed 28x for some reason, removes excess
+  select(per_dem, per_gop, state_abbr, county_name)
+
+#make COVID data
+covfefe <- read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv') 
+print(covfefe)
+```
+
+``` {r stateData2016}
+
+```
+
+```{r mapping}
+#not complete
+plot_usmap(data = statepop, values = "pop_2015", color = "red") + 
+  scale_fill_continuous(
+    low = "white", high = "red", name = "Population (2015)", label = scales::comma
+  ) + theme(legend.position = "right")
+```
