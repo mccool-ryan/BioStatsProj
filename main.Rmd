@@ -14,10 +14,10 @@ knitr::opts_chunk$set(echo = TRUE)
 #R collaboratory link: https://colab.research.google.com/notebook#create=true&language=r
 #install.packages('tidyverse')
 #install.packages('ggplot2')
-#install.packages('usemap')
+#install.packages('maps')
 
 
-library(usemap)
+library(usmap)
 library(ggplot2)
 library(tidyverse)
 
