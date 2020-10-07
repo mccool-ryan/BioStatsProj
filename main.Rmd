@@ -14,10 +14,10 @@ knitr::opts_chunk$set(echo = TRUE)
 #R collaboratory link: https://colab.research.google.com/notebook#create=true&language=r
 #install.packages('tidyverse')
 #install.packages('ggplot2')
-#install.packages('usmap')
+#install.packages('maps')
 
 
-library(usmap)
+library(maps)
 library(ggplot2)
 library(tidyverse)
 
@@ -54,4 +54,8 @@ plot_usmap(data = statepop, values = "pop_2015", color = "red") +
   scale_fill_continuous(
     low = "white", high = "red", name = "Population (2015)", label = scales::comma
   ) + theme(legend.position = "right")
+```
+
+```{r test}
+#Test if branching works. Hi Ryan! Hi Fan!
 ```
