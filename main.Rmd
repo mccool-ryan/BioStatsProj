@@ -56,6 +56,10 @@ plot_usmap(data = statepop, values = "pop_2015", color = "red") +
   ) + theme(legend.position = "right")
 ```
 
-```{r test}
-#Test if branching works. Hi Ryan! Hi Fan!
+```{r mapping}
+us_states <- map_data('state')
+
+us_states %>% 
+  ggplot(aes(x=long,y=lat,group=group)) +
+    geom_polygon(fill="white", color = "black")
 ```
