@@ -15,25 +15,31 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages('tidyverse')
 #install.packages('ggplot2')
 #install.packages('maps')
-
-
+#install.packages('cartogram')
+#install.packages('maptools')
+#install.packages('tweenr')
+#install.packages('broom')
+#install.packages('viridis')
+#install.packages('usmap')
 library(maps)
+library(usmap)
 library(ggplot2)
 library(tidyverse)
-
+library(cartogram)
+library(maptools)
+library(tweenr)
+library(broom)
+library(viridis)
 ```
 
 ``` {r scrapeData}
 #make 2020 poll data
 poll20 <- read_csv("https://projects.fivethirtyeight.com/polls-page/president_polls.csv")
-
 #make 2016 results by % of vote
 results16 <- read_csv("https://raw.githubusercontent.com/tonmcg/US_County_Level_Election_Results_08-16/master/2016_US_County_Level_Presidential_Results.csv")
-
 #subsets the data we really want, including county name
 sub16 <- results16 %>% filter(X1>27) %>% #Alaska county listed 28x for some reason, removes excess
   select(per_dem, per_gop, state_abbr, county_name)
-
 #make COVID data
 covfefe <- read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv') 
 print(covfefe)
@@ -41,26 +47,31 @@ print(covfefe)
 
 ``` {r stateData2016}
 #Calculate Percent
-PercentResult <- results16 %>% 
+PercentResult16 <- results16 %>% 
   filter(X1>27) %>%
   group_by(state_abbr) %>% 
-  summarize(per_dem = sum(votes_dem)/sum(total_votes),per_gop = sum(votes_gop)/sum(total_votes))
-PercentResult
+  summarize(per_dem = sum(votes_dem)/sum(total_votes),per_gop = sum(votes_gop)/sum(total_votes)) %>% 
+  mutate(margin = (per_dem*-1)+per_gop) %>%  #find a way to make this percents, time permiting
+  mutate(state = state_abbr)
 ```
 
-```{r mapping}
+```{r mapping2016}
 #not complete
-plot_usmap(data = statepop, values = "pop_2015", color = "red") + 
-  scale_fill_continuous(
-    low = "white", high = "red", name = "Population (2015)", label = scales::comma
-  ) + theme(legend.position = "right")
+plot_usmap(data = PercentResult16, values = "margin") + 
+  scale_fill_gradient2(low = "blue", mid = "white",
+                                high = "red", breaks = c(-50, 25, 0, 25, 50))
+
 ```
 
-```{r mapping}
-us_states <- map_data('state')
+```{r map_as_frame}
+test <- us_map()
+ggplot(data = us_map(),
+            mapping = aes(x = x, y = y, group = group, fill = PercentResult16$margin)) +
+  scale_fill_gradient2(low = "blue", mid = "white",
+                                high = "red", breaks = c(-50, 25, 0, 25, 50)) +
+  geom_polygon(fill = "white", color = "gray90") +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  guides(fill = FALSE)
 
-us_states %>% 
-  ggplot(aes(x=long,y=lat,group=group)) +
-    geom_polygon(fill="white", color = "black")
+
 ```
-
