@@ -64,11 +64,12 @@ plot_usmap(data = PercentResult16, values = "margin") +
 ```
 
 ```{r map_as_frame}
-test <- us_map()
+map2016 <- us_map() %>% mutate(state=abbr)
+map2016 <- left_join(map2016, PercentResult16)
 ggplot(data = us_map(),
-            mapping = aes(x = x, y = y, group = group, fill = PercentResult16$margin)) +
+            mapping = aes(x = x, y = y, group = group, fill = margin)) +
   scale_fill_gradient2(low = "blue", mid = "white",
-                                high = "red", breaks = c(-50, 25, 0, 25, 50)) +
+                                high = "red", breaks = c(-50, 25, 0, 25, 50))+
   geom_polygon(fill = "white", color = "gray90") +
   coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
   guides(fill = FALSE)
