@@ -65,3 +65,6 @@ ggplot(data = map2016,
   scale_fill_gradient2(low = "dark blue", mid = "white",
                                 high = "dark red", breaks = c(-50, 25, 0, 25, 50))
 ```
+# FZ cartesian map
+# AC election result map
+# RM Texas map (by county)
