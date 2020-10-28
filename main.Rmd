@@ -30,6 +30,7 @@ library(maptools)
 library(tweenr)
 library(broom)
 library(viridis)
+library(mapproj)
 ```
 
 ``` {r scrapeData}
@@ -55,24 +56,12 @@ PercentResult16 <- results16 %>%
   mutate(state = state_abbr)
 ```
 
-```{r mapping2016}
-#not complete
-plot_usmap(data = PercentResult16, values = "margin") + 
-  scale_fill_gradient2(low = "blue", mid = "white",
-                                high = "red", breaks = c(-50, 25, 0, 25, 50))
-
-```
-
 ```{r map_as_frame}
 map2016 <- us_map() %>% mutate(state=abbr)
 map2016 <- left_join(map2016, PercentResult16)
-ggplot(data = us_map(),
+ggplot(data = map2016,
             mapping = aes(x = x, y = y, group = group, fill = margin)) +
-  scale_fill_gradient2(low = "blue", mid = "white",
-                                high = "red", breaks = c(-50, 25, 0, 25, 50))+
-  geom_polygon(fill = "white", color = "gray90") +
-  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
-  guides(fill = FALSE)
-
-
+  geom_polygon(color = "black")  +
+  scale_fill_gradient2(low = "dark blue", mid = "white",
+                                high = "dark red", breaks = c(-50, 25, 0, 25, 50))
 ```
