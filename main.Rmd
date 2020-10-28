@@ -48,19 +48,38 @@ PercentResult <- results16 %>%
 PercentResult
 ```
 
-```{r mapping}
-#not complete
-plot_usmap(data = statepop, values = "pop_2015", color = "red") + 
-  scale_fill_continuous(
-    low = "white", high = "red", name = "Population (2015)", label = scales::comma
-  ) + theme(legend.position = "right")
+```{r map_as_frame}
+map2016 <- us_map() %>% mutate(state=abbr)
+map2016 <- left_join(map2016, PercentResult16)
+ggplot(data = map2016,
+            mapping = aes(x = x, y = y, group = group, fill = margin)) +
+  geom_polygon(color = "black")  +
+  scale_fill_gradient2(low = "dark blue", mid = "white",
+                                high = "dark red", breaks = c(-50, 25, 0, 25, 50)) +
+  ggtitle("Electoral Victory Margin 2016") +
+  theme(plot.title = element_text(hjust=0.5)) +
+  theme(panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank(),
+        panel.background = element_blank())
 ```
+ 
+```{r mapping2016 victory result}
 
-```{r mapping}
-us_states <- map_data('state')
+ggplot(data = map2016, mapping = aes(x = x, y = y, group = group, fill = margin >0)) +
+  geom_polygon(color = "black") +
+  scale_fill_manual(values = c("dark blue", "dark red"),
+                      name="Winning Party",
+                      labels=c("Democrat", "Republican")) +
+  ggtitle("Electoral Victory Results 2016") +
+  theme(plot.title = element_text(hjust=0.5)) +
+  theme(panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank(),
+        panel.background = element_blank())
 
-us_states %>% 
-  ggplot(aes(x=long,y=lat,group=group)) +
-    geom_polygon(fill="white", color = "black")
 ```
-
