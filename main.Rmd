@@ -63,3 +63,18 @@ us_states %>%
   ggplot(aes(x=long,y=lat,group=group)) +
     geom_polygon(fill="white", color = "black")
 ```
+```{r map}
+state_center <- read_tsv('states.txt') %>% 
+  select(Longitude, Latitude, 'Place Name') %>% 
+  usmap_transform()
+
+plot_usmap(data = PercentResult16, values = "margin") + 
+  scale_fill_gradient2(low = "blue", mid = "white",
+                                high = "red", breaks = c(-50, 25, 0, 25, 50)) +
+  theme(legend.position = "right") +
+  geom_point(
+    data = state_center,
+    aes(x = Longitude.1, y = Latitude.1, size = Place.Name),
+    color = "red", alpha = 0.5
+  )
+```
