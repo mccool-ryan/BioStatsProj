@@ -1,15 +1,19 @@
 ---
 title: "Main"
-author: "McCool"
-date: "10/7/2020"
+author: "Cordova, McCool, Zhang"
+date: "--"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+# MOL 290 Group Project - R Portion
 
-``` {r packages}
+### In this part of our project, we took Covid-19 data and mapped it to the 2016 election results.
+
+The only packages necessary are usmap and tidyverse. Initially, we tried using several other packages including maps, cartogram, etc., but we encountered several issues regarding incompatitble data types. (Most notably, we could not convert our data into a spatial data type necessary to make cartograms.)
+``` {r packages, message=FALSE}
 #install packages and initiate
 #R collaboratory link: https://colab.research.google.com/notebook#create=true&language=r
 #install.packages('tidyverse')
@@ -21,19 +25,12 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages('broom')
 #install.packages('viridis')
 #install.packages('usmap')
-library(maps)
 library(usmap)
-library(ggplot2)
 library(tidyverse)
-library(cartogram)
-library(maptools)
-library(tweenr)
-library(broom)
-library(viridis)
-library(mapproj)
 ```
 
-``` {r scrapeData}
+We begin by scraping data from NYT and 538 websites 
+``` {r scrapeData, message=FALSE, warning=FALSE}
 #make 2020 poll data
 poll20 <- read_csv("https://projects.fivethirtyeight.com/polls-page/president_polls.csv")
 #make 2016 results by % of vote
@@ -43,28 +40,70 @@ sub16 <- results16 %>% filter(X1>27) %>% #Alaska county listed 28x for some reas
   select(per_dem, per_gop, state_abbr, county_name)
 #make COVID data
 covfefe <- read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv') 
-print(covfefe)
 ```
 
-``` {r stateData2016}
-#Calculate Percent
+Next, we did several steps to wrangle the data into usable formats.
+First: 2016 election results
+``` {r stateData2016, message=FALSE, warning=FALSE}
+#Calculate margin of victory
 PercentResult16 <- results16 %>% 
   filter(X1>27) %>%
   group_by(state_abbr) %>% 
   summarize(per_dem = sum(votes_dem)/sum(total_votes),per_gop = sum(votes_gop)/sum(total_votes)) %>% 
-  mutate(margin = (per_dem*-1)+per_gop) %>%  #find a way to make this percents, time permiting
-  mutate(state = state_abbr)
+  mutate(margin = (per_dem*-1)+per_gop) %>% 
+  mutate(state = state_abbr) %>% 
+  # remove DC because we can't see her, also she blue af
+  filter(state_abbr != "DC")
 ```
 
-```{r map_as_frame}
-map2016 <- us_map() %>% mutate(state=abbr)
-map2016 <- left_join(map2016, PercentResult16)
-ggplot(data = map2016,
-            mapping = aes(x = x, y = y, group = group, fill = margin)) +
-  geom_polygon(color = "black")  +
-  scale_fill_gradient2(low = "dark blue", mid = "white",
-                                high = "dark red", breaks = c(-50, 25, 0, 25, 50))
+Second: Covid-19 case and death numbers
+```{r covid_data, message=FALSE, warning=FALSE}
+# wrangle NYT covid-19 data into usable format
+covfefe_small <- covfefe %>% 
+  # only use one date because it's cumulative
+  filter(date == "2020-11-01") %>% 
+  group_by(state) %>% 
+  summarise(cases = sum(cases), deaths = sum(deaths)) %>% 
+  rename(full = state) %>% 
+  left_join(statepop) %>% # from usmap package
+  select(full, cases, deaths, pop_2015) %>% 
+  # get per captia data so we're not just measuring populations
+  mutate(case_per_cap = cases / pop_2015, 
+         death_per_cap = deaths / pop_2015)
 ```
-# FZ cartesian map
-# AC election result map
-# RM Texas map (by county)
+
+Third: Joining Covid-19 data with geospatial data
+For this, we had to identify the longtitude and latitude of the centers of each state.
+``` {r covid_to_geo, message=FALSE, warning=FALSE}
+# found longitude and latitude data for center of each state
+# from https://www.latlong.net/category/states-236-14.html
+# copied and pasted into text file
+state_center <- read_tsv('states.txt') %>% 
+  select(Longitude, Latitude, 'Place Name') %>% 
+  usmap_transform() # convert to usmap usable format
+# delete ", the USA' from state names
+state_center$Place.Name <- gsub(",.*", "", state_center$Place.Name)
+# change "Washington State" to "Washington" to match other datasets
+state_center$Place.Name[32] <- "Washington"
+state_center <- state_center %>% 
+  rename(full = Place.Name) %>% 
+  # combine with covid data
+  left_join(covfefe_small)
+```
+
+After cleaning up all the data, we can finally create a map that contains both election results and Covid-19 data.
+```{r map plot, message=FALSE, warning=FALSE}
+# plot entire us map with election results
+plot_usmap(data = PercentResult16, values = "margin") + 
+  scale_fill_gradient2(low = "dark blue", mid = "white",
+                                high = "dark red", breaks = c(-50, 25, 0, 25, 50)) +
+  theme(legend.position = "right") +
+  
+  # add covid data on top
+  geom_point(
+    data = state_center,
+    aes(x = Longitude.1, y = Latitude.1, size = case_per_cap),
+    color = "black", alpha = 0.2
+  ) +
+  scale_size(range = c(0,15))
+```
