@@ -16,28 +16,21 @@ The only packages necessary are usmap and tidyverse. Initially, we tried using s
 ``` {r packages, message=FALSE}
 #install packages and initiate
 #R collaboratory link: https://colab.research.google.com/notebook#create=true&language=r
-#install.packages('tidyverse')
-#install.packages('ggplot2')
-#install.packages('maps')
-#install.packages('cartogram')
-#install.packages('maptools')
-#install.packages('tweenr')
-#install.packages('broom')
-#install.packages('viridis')
-#install.packages('usmap')
+#install.packages("tidyverse")
+#install.packages("rgdal")
+#install.packages("usmap")
+#install.packages("gganimate")
+#install.packages("png")
+#install.packages("gifski")
 library(usmap)
 library(tidyverse)
+library(gganimate)
 ```
 
 We begin by scraping data from NYT and 538 websites 
 ``` {r scrapeData, message=FALSE, warning=FALSE}
-#make 2020 poll data
-poll20 <- read_csv("https://projects.fivethirtyeight.com/polls-page/president_polls.csv")
 #make 2016 results by % of vote
 results16 <- read_csv("https://raw.githubusercontent.com/tonmcg/US_County_Level_Election_Results_08-16/master/2016_US_County_Level_Presidential_Results.csv")
-#subsets the data we really want, including county name
-sub16 <- results16 %>% filter(X1>27) %>% #Alaska county listed 28x for some reason, removes excess
-  select(per_dem, per_gop, state_abbr, county_name)
 #make COVID data
 covfefe <- read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv') 
 ```
@@ -51,7 +44,7 @@ PercentResult16 <- results16 %>%
   group_by(state_abbr) %>% 
   summarize(per_dem = sum(votes_dem)/sum(total_votes),per_gop = sum(votes_gop)/sum(total_votes)) %>% 
   mutate(margin = (per_dem*-1)+per_gop) %>% 
-  mutate(state = state_abbr) %>% 
+  mutate(state = state.name[match(state_abbr,state.abb)]) %>% 
   # remove DC because we can't see her, also she blue af
   filter(state_abbr != "DC")
 ```
@@ -98,12 +91,60 @@ plot_usmap(data = PercentResult16, values = "margin") +
   scale_fill_gradient2(low = "dark blue", mid = "white",
                                 high = "dark red", breaks = c(-50, 25, 0, 25, 50)) +
   theme(legend.position = "right") +
-  
   # add covid data on top
   geom_point(
     data = state_center,
     aes(x = Longitude.1, y = Latitude.1, size = case_per_cap),
     color = "black", alpha = 0.2
   ) +
-  scale_size(range = c(0,15))
+    geom_point(
+    data = state_center,
+    aes(x = Longitude.1, y = Latitude.1, size = death_per_cap),
+    color = "black", alpha = 0.2
+  ) +
+  scale_size(range = c(0,15)) +
+  # add labels
+  ggtitle('Cases and Deaths per Capita as of November 1st, 2020')     +
+  labs(size='Cases per Capita', fill='Margin of Victory')
+
+# saves plot as png in working directory
+ggsave('covid_map.png', path = NULL)
+```
+
+```{r animated covid cases, message=FALSE, warning=FALSE}
+# change data frame to exclude unused data and
+# include election results and population 
+covidfefe <- covfefe %>% 
+  group_by(date, state) %>% 
+  summarize(cases=sum(cases), deaths=sum(deaths)) %>%
+  left_join(PercentResult16) %>% 
+  rename(full = state) %>% 
+  left_join(statepop) %>% 
+  mutate(
+    cases_per_cap = cases/pop_2015,
+    deaths_per_cap = deaths/pop_2015)
+
+# plot data as scatter plot
+ggplot(covidfefe, aes(
+    x = cases_per_cap,
+    y = deaths_per_cap,
+    color = margin,
+    size = pop_2015)) +
+  geom_point() +
+  scale_color_gradient2(
+    low = "dark blue", mid = "white",
+    high = "dark red", breaks = c(-50, 25, 0, 25, 50)) +
+  theme(legend.position = "right") +
+  labs(x='Cases per Capita', y='Deaths per Capita',
+       size='State Poulation', color='Margin of Victory') +
+  # animate over days
+  transition_time(date) +
+  # show previous data trail
+  shadow_wake(wake_length = 0.3) +
+  ggtitle('Cases and Deaths per Capita over Time')
+
+# saves animation as a gif in working directory
+anim_save('covid_election.gif', 
+          animation = last_animation(), 
+          path = NULL)
 ```
