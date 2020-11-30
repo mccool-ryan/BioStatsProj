@@ -10,10 +10,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 # MOL 290 Group Project - R Portion
 
-### In this part of our project, we took Covid-19 data and mapped it to the 2016 election results.
+### In this part of our project, we took Covid-19 data and mapped it to the 2016 election results. We were unable to find 2020 election results by state.
 
-The only packages necessary are usmap and tidyverse. Initially, we tried using several other packages including maps, cartogram, etc., but we encountered several issues regarding incompatitble data types. (Most notably, we could not convert our data into a spatial data type necessary to make cartograms.)
-``` {r packages, message=FALSE}
+##### Initially, we tried using several other packages including maps, cartogram, etc., but we encountered several issues regarding incompatitble data types. (Most notably, we could not convert our data into a spatial data type necessary to make cartograms.) Although we were able to successfully map covid data onto a US map, the resulting plot is not useful nor visually appealing. From there, we decided to use scatter plots to represent our data, which are mostly done in python. In this section however, we include an animated time-course.
+
+The necessary packages must be installed and loaded for the code to run properly.
+``` {r packages, message=FALSE, warning=FALSE}
 #install packages and initiate
 #R collaboratory link: https://colab.research.google.com/notebook#create=true&language=r
 #install.packages("tidyverse")
@@ -27,22 +29,23 @@ library(tidyverse)
 library(gganimate)
 ```
 
-We begin by scraping data from NYT and 538 websites 
+We begin by scraping data from NYT (via GitHub repository)
 ``` {r scrapeData, message=FALSE, warning=FALSE}
-#make 2016 results by % of vote
+# 2016 election results
 results16 <- read_csv("https://raw.githubusercontent.com/tonmcg/US_County_Level_Election_Results_08-16/master/2016_US_County_Level_Presidential_Results.csv")
-#make COVID data
+# COVID data
 covfefe <- read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv') 
 ```
 
 Next, we did several steps to wrangle the data into usable formats.
 First: 2016 election results
 ``` {r stateData2016, message=FALSE, warning=FALSE}
-#Calculate margin of victory
 PercentResult16 <- results16 %>% 
   filter(X1>27) %>%
   group_by(state_abbr) %>% 
-  summarize(per_dem = sum(votes_dem)/sum(total_votes),per_gop = sum(votes_gop)/sum(total_votes)) %>% 
+  summarize(per_dem = sum(votes_dem)/sum(total_votes),
+            per_gop = sum(votes_gop)/sum(total_votes)) %>% 
+  #calculate margin of victory
   mutate(margin = (per_dem*-1)+per_gop) %>% 
   mutate(state = state.name[match(state_abbr,state.abb)]) %>% 
   # remove DC because we can't see her, also she blue af
@@ -54,7 +57,7 @@ Second: Covid-19 case and death numbers
 # wrangle NYT covid-19 data into usable format
 covfefe_small <- covfefe %>% 
   # only use one date because it's cumulative
-  filter(date == "2020-11-01") %>% 
+  filter(date == "2020-11-29") %>% 
   group_by(state) %>% 
   summarise(cases = sum(cases), deaths = sum(deaths)) %>% 
   rename(full = state) %>% 
@@ -111,6 +114,7 @@ plot_usmap(data = PercentResult16, values = "margin") +
 ggsave('covid_map.png', path = NULL)
 ```
 
+Because the map is not very informative, we decided to include several scatter plots and subsequent analyses in python. In addition, we also decided to do a time-based animation as an means of presenting multi-dimensional data (cases, death, margin of victory, and time) and just for fun.
 ```{r animated covid cases, message=FALSE, warning=FALSE}
 # change data frame to exclude unused data and
 # include election results and population 
@@ -125,7 +129,7 @@ covidfefe <- covfefe %>%
     deaths_per_cap = deaths/pop_2015)
 
 # plot data as scatter plot
-ggplot(covidfefe, aes(
+anim <- ggplot(covidfefe, aes(
     x = cases_per_cap,
     y = deaths_per_cap,
     color = margin,
@@ -140,8 +144,20 @@ ggplot(covidfefe, aes(
   # animate over days
   transition_time(date) +
   # show previous data trail
-  shadow_wake(wake_length = 0.3) +
-  ggtitle('Cases and Deaths per Capita over Time')
+  shadow_wake(wake_length = 0.2) +
+  # displays date as title
+  labs(title = "Date: {frame_time}") +
+  # gets rid of grid
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+# changes gganim object into an animation
+# all numbers represent seconds
+animate(anim,
+        duration = 20, # total time
+        fps = 15, # frames per second
+        end_pause = 15) # freeze last frame
+
 
 # saves animation as a gif in working directory
 anim_save('covid_election.gif', 
